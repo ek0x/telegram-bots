@@ -117,9 +117,12 @@ async def tutar_al(update: Update, context: ContextTypes.DEFAULT_TYPE):
         veri.append(yeni_kayit)
         veri_kaydet(veri)
         
-        await update.message.reply_text(
-            f"✅ *Bloke Başarıyla Eklendi!*\n\n"
-            f"🆔 ID: {yeni_kayit['id']}\n"
-            f"👤 Sahip: {sahip}\n"
-            f"🏦 Banka: {banka}\n"
+                await update.message.reply_text(
+            f"Bloke Basariyla Eklendi!\n\n"
+            f"ID: {yeni_kayit['id']}\n"
+            f"Sahip: {sahip}\n"
+            f"Banka: {banka}\n"
+            f"Tutar: {tutar:,.2f} TL\n"
+            f"Tarih: {datetime.now().strftime('%d.%m.%Y %H:%M')}"
+        )
             
