@@ -5,10 +5,16 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, ConversationHandler, MessageHandler, filters
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from pymongo import MongoClient
 
 BOT_TOKEN = "8638044446:AAFKqrfmvgIfUaqZM0Rxse8NW4Vr-OBpFTE"
 VERI_DOSYASI = "bloke_verileri.json"
 SAHIP, BANKA, TUTAR = range(3)
+MONGODB_URI = "mongodb+srv://emirhanksk:270325Ee.@telegram-bots.8l3uhpb.mongodb.net/?appName=telegram-bots"
+
+client = MongoClient(MONGODB_URI)
+db = client['telegram_bots']
+bloke_collection = db['bloke']
 
 class HealthCheck(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -26,18 +32,28 @@ def web_sunucu():
     server.serve_forever()
 
 def veri_yukle():
-    if os.path.exists(VERI_DOSYASI):
-        try:
-            with open(VERI_DOSYASI, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except:
-            return []
-    return []
+    veriler = []
+    try:
+        for kayit in bloke_collection.find():
+            kayit_copy = kayit.copy()
+            kayit_copy['id'] = int(kayit['_id'])
+            del kayit_copy['_id']
+            veriler.append(kayit_copy)
+        return sorted(veriler, key=lambda x: x['id'])
+    except:
+        return []
 
 def veri_kaydet(veri):
-    with open(VERI_DOSYASI, "w", encoding="utf-8") as f:
-        json.dump(veri, f, ensure_ascii=False, indent=2)
-
+    try:
+        bloke_collection.delete_many({})
+        for kayit in veri:
+            kayit_copy = kayit.copy()
+            kayit_copy['_id'] = kayit['id']
+            del kayit_copy['id']
+            bloke_collection.insert_one(kayit_copy)
+    except Exception as e:
+        print(f"MongoDB kayit hatasi: {e}")
+        
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     mesaj = "💰 *Banka Bloke Takip Botu*\n\n"
     mesaj += "📋 Komutlar:\n"
