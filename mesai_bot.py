@@ -6,6 +6,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from pymongo import MongoClient
 
 BOT_TOKEN = "8644328245:AAE-WcsSJ0-BHG9KaReQfh2FR4Cp8dIlLcM"
 SAAT_UCRETI = 2000 / 8
@@ -14,6 +15,11 @@ TAM_MESAI_UCRET = 2000
 VERI_DOSYASI = "mesai_verileri.json"
 TURKIYE = pytz.timezone('Europe/Istanbul')
 UTC = pytz.UTC
+MONGODB_URI = "mongodb+srv://emirhanksk:270325Ee.@telegram-bots.8l3uhpb.mongodb.net/?appName=telegram-bots"
+
+client = MongoClient(MONGODB_URI)
+db = client['telegram_bots']
+mesai_collection = db['mesai']
 
 class HealthCheck(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -36,15 +42,29 @@ def tr_saat():
     return utc_now.astimezone(TURKIYE)
 
 def veri_yukle():
-    if os.path.exists(VERI_DOSYASI):
-        with open(VERI_DOSYASI, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
+    veriler = {}
+    try:
+        for kayit in mesai_collection.find():
+            kullanici_id = kayit['kullanici_id']
+            kayit_copy = kayit.copy()
+            del kayit_copy['_id']
+            del kayit_copy['kullanici_id']
+            veriler[kullanici_id] = kayit_copy
+    except:
+        pass
+    return veriler
 
 def veri_kaydet(veri):
-    with open(VERI_DOSYASI, "w", encoding="utf-8") as f:
-        json.dump(veri, f, ensure_ascii=False, indent=2)
-
+    try:
+        for kullanici_id, bilgi in veri.items():
+            mesai_collection.update_one(
+                {'kullanici_id': kullanici_id},
+                {'$set': {**bilgi, 'kullanici_id': kullanici_id}},
+                upsert=True
+            )
+    except Exception as e:
+        print(f"MongoDB kayit hatasi: {e}")
+        
 async def mesai_baslat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     kullanici = update.effective_user
     kullanici_id = str(kullanici.id)
