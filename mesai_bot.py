@@ -185,7 +185,7 @@ async def rapor(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bugun = simdi.strftime("%Y-%m-%d")
     
     mesaj = "MESAI RAPORU\n"
-    mesaj += f"Tarih: {simdi.strftime('%d.%m.%Y')}\n"
+    mesaj += f"Tarih: {simdi.strftime('%d.%m.%Y %H:%M')}\n"
     mesaj += "=" * 30 + "\n\n"
     
     bugun_veri_var = False
@@ -193,40 +193,25 @@ async def rapor(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for uid, bilgi in veri.items():
         isim = bilgi.get("isim", "Bilinmeyen")
         baslangic_str = bilgi.get("baslangic", "")
-        son_bitis_str = bilgi.get("son_bitis", "")
         aktif = bilgi.get("aktif", False)
         
-        # Bugun calisma var mi kontrol et
-        bugun_calisma = False
-        
-        # Aktif mesai ve bugun baslamis mi?
-        if aktif and baslangic_str.startswith(bugun):
-            bugun_calisma = True
-        
-        # Bugun bitis yapmis mi?
-        if son_bitis_str.startswith(bugun):
-            bugun_calisma = True
-        
-        # Sadece bugunku verileri goster
-        if bugun_calisma:
-            bugun_veri_var = True
+        if aktif:
+            baslangic_tarih = baslangic_str[:10] if baslangic_str else ""
             
-            if aktif:
-                mesaj += f"AKTIF - {isim}: Mesaide\n"
+            if baslangic_tarih == bugun:
+                bugun_veri_var = True
+                mesaj += f"AKTIF - {isim}\n"
                 mesaj += f"   Baslangic: {baslangic_str[11:16]}\n"
-            else:
-                mesaj += f"BITTI - {isim}: Mesai bitti\n"
-                if son_bitis_str:
-                    mesaj += f"   Bitis: {son_bitis_str[11:16]}\n"
-            
-            son_ucret = bilgi.get("son_ucret", 0)
-            if son_ucret > 0 and son_bitis_str.startswith(bugun):
-                mesaj += f"   Kazanc: {son_ucret:.2f} TL\n"
-            
-            mesaj += "\n"
+                
+                baslangic_dt = datetime.strptime(baslangic_str, "%Y-%m-%d %H:%M:%S")
+                baslangic_dt = TURKIYE.localize(baslangic_dt)
+                gecen = simdi - baslangic_dt
+                saat = int(gecen.total_seconds() / 3600)
+                dakika = int((gecen.total_seconds() % 3600) / 60)
+                mesaj += f"   Gecen sure: {saat}s {dakika}d\n\n"
     
     if not bugun_veri_var:
-        mesaj += "Bugun henuz mesai kaydi yok.\n"
+        mesaj += "Bugun aktif mesai yok.\n"
     
     await update.message.reply_text(mesaj)
 
