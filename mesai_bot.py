@@ -97,17 +97,14 @@ async def mesai_bitir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     kalan_dakika = int((toplam_saniye % 3600) / 60)
     
     ucret = saat * SAAT_UCRETI
-    veri[kullanici_id]["aktif"] = False
-    veri[kullanici_id]["son_bitis"] = bitis.strftime("%Y-%m-%d %H:%M:%S")
-    veri[kullanici_id]["son_sure_saat"] = round(saat, 2)
-    veri[kullanici_id]["son_ucret"] = round(ucret, 2)
-    
-    onceki_toplam = veri[kullanici_id].get("toplam_kazanc", 0)
-    veri[kullanici_id]["toplam_kazanc"] = round(onceki_toplam + ucret, 2)
-    veri_kaydet(veri)
-    
-    await update.message.reply_text(
+        await update.message.reply_text(
         f"🔴 {kullanici_adi}, mesain bitti!\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
         f"🕐 Başlangıç : {baslangic.strftime('%H:%M:%S')}\n"
-        f"🕐 Bitiş     
+        f"🕐 Bitiş     : {bitis.strftime('%H:%M:%S')}\n"
+        f"⏱️ Çalışma   : {tam_saat} saat {kalan_dakika} dakika\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"💰 Kazanç    : {ucret:.2f}₺\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"📊 Toplam Kazanç: {veri[kullanici_id]['toplam_kazanc']:.2f}₺"
+    )
