@@ -1,0 +1,13 @@
+# Veri dosyaları
+*.json
+mesai_verileri.json
+bloke_verileri.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Diğer
+.DS_Store
+.env
