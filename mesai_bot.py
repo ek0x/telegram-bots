@@ -182,6 +182,51 @@ async def rapor(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     simdi = tr_saat()
+    bugun = simdi.strftime("%Y-%m-%d")
+    
+    mesaj = "MESAI RAPORU\n"
+    mesaj += f"Tarih: {simdi.strftime('%d.%m.%Y')}\n"
+    mesaj += "=" * 30 + "\n\n"
+    
+    bugun_veri_var = False
+    
+    for uid, bilgi in veri.items():
+        isim = bilgi.get("isim", "Bilinmeyen")
+        baslangic_str = bilgi.get("baslangic", "")
+        son_bitis_str = bilgi.get("son_bitis", "")
+        aktif = bilgi.get("aktif", False)
+        
+        bugun_calisma = False
+        
+        if aktif and baslangic_str.startswith(bugun):
+            bugun_calisma = True
+        
+        if son_bitis_str.startswith(bugun):
+            bugun_calisma = True
+        
+        if bugun_calisma:
+            bugun_veri_var = True
+            
+            if aktif:
+                mesaj += f"🟢 {isim}: Mesaide\n"
+                mesaj += f"   Baslangic: {baslangic_str[11:16]}\n"
+            else:
+                mesaj += f"🔴 {isim}: Mesai bitti\n"
+                if son_bitis_str:
+                    mesaj += f"   Bitis: {son_bitis_str[11:16]}\n"
+            
+            son_ucret = bilgi.get("son_ucret", 0)
+            if son_ucret > 0 and son_bitis_str.startswith(bugun):
+                mesaj += f"   Bugunun kazanci: {son_ucret:.2f} TL\n"
+            
+            mesaj += "\n"
+    
+    if not bugun_veri_var:
+        mesaj += "Bugun henuz mesai kaydı yok.\n"
+    
+    await update.message.reply_text(mesaj)
+    
+    simdi = tr_saat()
     mesaj = "MESAI RAPORU\n"
     mesaj += f"Rapor Saati: {simdi.strftime('%d.%m.%Y %H:%M:%S')}\n"
     mesaj += "=" * 30 + "\n\n"
