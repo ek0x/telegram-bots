@@ -196,54 +196,37 @@ async def rapor(update: Update, context: ContextTypes.DEFAULT_TYPE):
         son_bitis_str = bilgi.get("son_bitis", "")
         aktif = bilgi.get("aktif", False)
         
+        # Bugun calisma var mi kontrol et
         bugun_calisma = False
         
+        # Aktif mesai ve bugun baslamis mi?
         if aktif and baslangic_str.startswith(bugun):
             bugun_calisma = True
         
+        # Bugun bitis yapmis mi?
         if son_bitis_str.startswith(bugun):
             bugun_calisma = True
         
+        # Sadece bugunku verileri goster
         if bugun_calisma:
             bugun_veri_var = True
             
             if aktif:
-                mesaj += f"🟢 {isim}: Mesaide\n"
+                mesaj += f"AKTIF - {isim}: Mesaide\n"
                 mesaj += f"   Baslangic: {baslangic_str[11:16]}\n"
             else:
-                mesaj += f"🔴 {isim}: Mesai bitti\n"
+                mesaj += f"BITTI - {isim}: Mesai bitti\n"
                 if son_bitis_str:
                     mesaj += f"   Bitis: {son_bitis_str[11:16]}\n"
             
             son_ucret = bilgi.get("son_ucret", 0)
             if son_ucret > 0 and son_bitis_str.startswith(bugun):
-                mesaj += f"   Bugunun kazanci: {son_ucret:.2f} TL\n"
+                mesaj += f"   Kazanc: {son_ucret:.2f} TL\n"
             
             mesaj += "\n"
     
     if not bugun_veri_var:
-        mesaj += "Bugun henuz mesai kaydı yok.\n"
-    
-    await update.message.reply_text(mesaj)
-    
-    simdi = tr_saat()
-    mesaj = "MESAI RAPORU\n"
-    mesaj += f"Rapor Saati: {simdi.strftime('%d.%m.%Y %H:%M:%S')}\n"
-    mesaj += "=" * 30 + "\n\n"
-    
-    for uid, bilgi in veri.items():
-        isim = bilgi.get("isim", "Bilinmeyen")
-        durum_text = "Mesaide" if bilgi.get("aktif") else "Mesaide degil"
-        toplam = bilgi.get("toplam_kazanc", 0)
-        
-        mesaj += f"{isim}: {durum_text}\n"
-        
-        if bilgi.get("aktif"):
-            baslangic_str = bilgi.get("baslangic", "")
-            if baslangic_str:
-                mesaj += f"  Baslangic: {baslangic_str[11:19]}\n"
-        
-        mesaj += f"  Toplam kazanc: {toplam:.2f} TL\n\n"
+        mesaj += "Bugun henuz mesai kaydi yok.\n"
     
     await update.message.reply_text(mesaj)
 
