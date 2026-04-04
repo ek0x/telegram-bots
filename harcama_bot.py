@@ -22,7 +22,8 @@ KATEGORILER = {
     "kaptan": "👨‍✈️ Kaptan",
     "raptor": "🦖 Raptor",
     "set": "💳 Set Ödemesi",
-    "ortak": "🏘️ Ortak Gider"
+    "ortak": "🏘️ Ortak Gider",
+    "personel": "👷 Personel Ödemesi"
 }
 
 class HealthCheck(BaseHTTPRequestHandler):
