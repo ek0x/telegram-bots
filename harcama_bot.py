@@ -60,6 +60,7 @@ async def harcama_baslat(update: Update, context: ContextTypes.DEFAULT_TYPE):
          InlineKeyboardButton("🦖 Raptor", callback_data="kat_raptor")],
         [InlineKeyboardButton("💳 Set Ödemesi", callback_data="kat_set"),
          InlineKeyboardButton("🏘️ Ortak Gider", callback_data="kat_ortak")],
+        [InlineKeyboardButton("👷 Personel Ödemesi", callback_data="kat_personel")],
         [InlineKeyboardButton("❌ İptal", callback_data="kat_iptal")]
     ]
     await update.message.reply_text("Kategori sec:", reply_markup=InlineKeyboardMarkup(keyboard))
