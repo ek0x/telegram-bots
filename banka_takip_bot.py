@@ -51,30 +51,41 @@ async def ekle_baslat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("👤 Isim Soyisim yazin:\n\n_Iptal icin /iptal yazin_")
     return ISIM
 
-async def isim_al(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    isim = update.message.text.strip()
-    if not isim or len(isim) < 3:
-        await update.message.reply_text("❌ Lutfen gecerli bir isim girin!")
-        return ISIM
+async def banka_al(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    metin = update.message.text.strip()
     
-    mevcut = banka_set_collection.find_one({"isim_lower": isim.lower()})
-    if mevcut:
-        await update.message.reply_text(f"⚠️ {isim} zaten kayitli!\n\n/detay {isim} ile gorebilirsin.")
-        return ConversationHandler.END
+    satirlar = metin.split('\n')
+    bankalar = [s.strip() for s in satirlar if s.strip()]
     
-    context.user_data['isim'] = isim
-    mesaj = f"✅ Isim: {isim}\n\n"
-    mesaj += "🏦 Simdi bankalari yazin:\n"
-    mesaj += "- Her satira bir banka\n"
-    mesaj += "- Ornek:\n"
-    mesaj += "  Ziraat Bankasi\n"
-    mesaj += "  Is Bankasi\n"
-    mesaj += "  Garanti BBVA\n\n"
-    mesaj += "Tamamladiktan sonra /tamam yazin"
+    if len(bankalar) == 0:
+        await update.message.reply_text("❌ En az 1 banka yazin!")
+        return BANKALAR
+    
+    isim = context.user_data['isim']
+    simdi = datetime.now(TURKIYE)
+    ekleyen = update.effective_user.first_name or update.effective_user.username or "Bilinmeyen"
+    
+    kayit = {
+        "isim": isim,
+        "isim_lower": isim.lower(),
+        "bankalar": bankalar,
+        "tarih": simdi.strftime("%Y-%m-%d %H:%M:%S"),
+        "ekleyen": ekleyen
+    }
+    
+    banka_set_collection.insert_one(kayit)
+    
+    mesaj = "✅ Kaydedildi!\n\n"
+    mesaj += f"👤 {isim}\n"
+    mesaj += f"🏦 {len(bankalar)} Banka:\n\n"
+    for i, banka in enumerate(bankalar, 1):
+        mesaj += f"{i}. {banka}\n"
+    mesaj += f"\n📅 {simdi.strftime('%d.%m.%Y %H:%M')}\n"
+    mesaj += f"👤 Ekleyen: {ekleyen}"
     
     await update.message.reply_text(mesaj)
-    context.user_data['bankalar'] = []
-    return BANKALAR
+    context.user_data.clear()
+    return ConversationHandler.END
 
 async def banka_al(update: Update, context: ContextTypes.DEFAULT_TYPE):
     metin = update.message.text.strip()
