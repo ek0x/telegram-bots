@@ -10,7 +10,7 @@ from pymongo import MongoClient
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 VERI_DOSYASI = "bloke_verileri.json"
 SAHIP, BANKA, TUTAR = range(3)
-MONGODB_URI = os.getenv('mongodb+srv://emirhanksk:270325Ee.@telegram-bots.8l3uhpb.mongodb.net/?appName=telegram-bots')
+MONGODB_URI = os.getenv('MONGODB_URI')
 
 client = MongoClient(MONGODB_URI)
 db = client['telegram_bots']
