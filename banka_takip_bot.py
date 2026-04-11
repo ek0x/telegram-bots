@@ -7,7 +7,7 @@ from pymongo import MongoClient
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-BOT_TOKEN = os.getenv('8755846074:AAE0vZ3utPR9dPy1ng0ap3YBPQGnuJTNRt4')
+BOT_TOKEN = os.getenv('BOT_TOKEN')
 MONGODB_URI = os.getenv('mongodb+srv://emirhanksk:270325Ee.@telegram-bots.8l3uhpb.mongodb.net/?appName=telegram-bots')
 TURKIYE = pytz.timezone('Europe/Istanbul')
 
