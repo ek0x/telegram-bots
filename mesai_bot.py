@@ -8,7 +8,7 @@ import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pymongo import MongoClient
 
-BOT_TOKEN = os.getenv('8644328245:AAE-WcsSJ0-BHG9KaReQfh2FR4Cp8dIlLcM')
+BOT_TOKEN = os.getenv('BOT_TOKEN')
 SAAT_UCRETI = 2000 / 8
 TAM_MESAI_SAAT = 8
 TAM_MESAI_UCRET = 2000
