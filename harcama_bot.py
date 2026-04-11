@@ -8,8 +8,8 @@ import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import io
 
-BOT_TOKEN = "8723144601:AAGv3MIamyyi-bg39Vsv3zWvQQ-K42FFwYY"
-MONGODB_URI = "mongodb+srv://emirhanksk:270325Ee.@telegram-bots.8l3uhpb.mongodb.net/?appName=telegram-bots"
+BOT_TOKEN = os.getenv('8723144601:AAGv3MIamyyi-bg39Vsv3zWvQQ-K42FFwYY')
+MONGODB_URI = os.getenv('mongodb+srv://emirhanksk:270325Ee.@telegram-bots.8l3uhpb.mongodb.net/?appName=telegram-bots')
 TURKIYE = pytz.timezone('Europe/Istanbul')
 
 client = MongoClient(MONGODB_URI)
