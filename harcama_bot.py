@@ -9,7 +9,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import io
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
-MONGODB_URI = os.getenv('mongodb+srv://emirhanksk:270325Ee.@telegram-bots.8l3uhpb.mongodb.net/?appName=telegram-bots')
+MONGODB_URI = os.getenv('MONGODB_URI')
 TURKIYE = pytz.timezone('Europe/Istanbul')
 
 client = MongoClient(MONGODB_URI)
