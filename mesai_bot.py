@@ -15,7 +15,7 @@ TAM_MESAI_UCRET = 2000
 VERI_DOSYASI = "mesai_verileri.json"
 TURKIYE = pytz.timezone('Europe/Istanbul')
 UTC = pytz.UTC
-MONGODB_URI = os.getenv('mongodb+srv://emirhanksk:270325Ee.@telegram-bots.8l3uhpb.mongodb.net/?appName=telegram-bots')
+MONGODB_URI = os.getenv('MONGODB_URI')
 
 client = MongoClient(MONGODB_URI)
 db = client['telegram_bots']
