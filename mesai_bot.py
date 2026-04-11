@@ -215,6 +215,71 @@ async def rapor(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(mesaj)
 
+async def haftalik_rapor(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    simdi = tr_saat()
+    bugun = simdi.date()
+    
+    mesaj = "📊 HAFTALIK ÇALIŞMA RAPORU\n"
+    mesaj += f"📅 Son 7 Gün\n"
+    mesaj += f"📅 {(bugun - __import__('datetime').timedelta(days=6)).strftime('%d.%m.%Y')} - {bugun.strftime('%d.%m.%Y')}\n"
+    mesaj += "=" * 30 + "\n\n"
+    
+    try:
+        veri = veri_yukle()
+        
+        if not veri:
+            await update.message.reply_text("📊 Henuz kayitli mesai verisi yok.")
+            return
+        
+        for uid, bilgi in veri.items():
+            isim = bilgi.get("isim", "Bilinmeyen")
+            
+            toplam_saniye = 0
+            toplam_ucret = 0
+            gun_sayisi = 0
+            gunluk_detay = []
+            
+            for i in range(7):
+                gun = bugun - __import__('datetime').timedelta(days=i)
+                gun_str = gun.strftime("%Y-%m-%d")
+                gun_label = gun.strftime("%d.%m.%Y")
+                
+                gun_baslangic = bilgi.get("baslangic", "")
+                gun_bitis = bilgi.get("son_bitis", "")
+                
+                if gun_baslangic.startswith(gun_str) and gun_bitis.startswith(gun_str):
+                    bas = datetime.strptime(gun_baslangic, "%Y-%m-%d %H:%M:%S")
+                    bit = datetime.strptime(gun_bitis, "%Y-%m-%d %H:%M:%S")
+                    sure = (bit - bas).total_seconds()
+                    saat = int(sure / 3600)
+                    dakika = int((sure % 3600) / 60)
+                    ucret = (sure / 3600) * SAAT_UCRETI
+                    
+                    toplam_saniye += sure
+                    toplam_ucret += ucret
+                    gun_sayisi += 1
+                    
+                    gunluk_detay.append(f"   📅 {gun_label}: {saat}s {dakika}d → {ucret:.0f} TL")
+            
+            if gun_sayisi > 0:
+                toplam_saat = int(toplam_saniye / 3600)
+                toplam_dakika = int((toplam_saniye % 3600) / 60)
+                
+                mesaj += f"👤 {isim}\n"
+                for detay in reversed(gunluk_detay):
+                    mesaj += detay + "\n"
+                mesaj += f"   ⏱️ Toplam: {toplam_saat}s {toplam_dakika}d\n"
+                mesaj += f"   💰 Kazanç: {toplam_ucret:.2f} TL\n"
+                mesaj += f"   📆 Çalışılan Gün: {gun_sayisi}/7\n\n"
+        
+        if mesaj.count("👤") == 0:
+            mesaj += "Son 7 günde çalışma kaydı bulunamadı."
+        
+        await update.message.reply_text(mesaj)
+        
+    except Exception as e:
+        await update.message.reply_text(f"❌ Hata: {e}")
+
 async def yardim(update: Update, context: ContextTypes.DEFAULT_TYPE):
     mesaj = "KOMUTLAR\n"
     mesaj += "=" * 30 + "\n"
@@ -222,6 +287,7 @@ async def yardim(update: Update, context: ContextTypes.DEFAULT_TYPE):
     mesaj += "/cikis - Mesaini bitir\n"
     mesaj += "/durum - Anlik mesai durumu\n"
     mesaj += "/rapor - Tum calisanlarin raporu\n"
+    mesaj += "/haftalik - Haftalik rapor\n"
     mesaj += "/yardim - Bu mesaji gosterir\n"
     mesaj += "=" * 30 + "\n"
     mesaj += f"8 saat = {TAM_MESAI_UCRET} TL | Saat basi = {SAAT_UCRETI:.2f} TL"
@@ -247,6 +313,7 @@ def main():
     app.add_handler(CommandHandler("durum", durum))
     app.add_handler(CommandHandler("rapor", rapor))
     app.add_handler(CommandHandler("yardim", yardim))
+    app.add_handler(CommandHandler("haftalik", haftalik_rapor))
     
     simdi = tr_saat()
     print("Bot calisiyor...")
