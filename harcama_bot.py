@@ -239,9 +239,9 @@ def main():
     app.add_handler(CommandHandler("toplam", toplam))
     app.add_handler(CommandHandler("excel", excel_indir))
     app.add_handler(CommandHandler("sil", sil_harcama))
-    app.add_handler(CallbackQueryHandler(sil_harcama_callback, pattern="^silsec_"))
-    app.add_handler(CallbackQueryHandler(sil_harcama_callback, pattern="^silonay_"))
-    app.add_handler(CallbackQueryHandler(sil_harcama_callback, pattern="^sil_iptal"))
+app.add_handler(CallbackQueryHandler(sil_harcama_callback, pattern="^silsec_"))
+app.add_handler(CallbackQueryHandler(sil_harcama_callback, pattern="^silonay_"))
+app.add_handler(CallbackQueryHandler(sil_harcama_callback, pattern="^sil_iptal"))
 
     print("Harcama Takip Botu calisiyor...")
     app.run_polling()
