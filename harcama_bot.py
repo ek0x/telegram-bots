@@ -4,6 +4,7 @@ import pytz
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 from pymongo import MongoClient
+from bson import ObjectId
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import io
@@ -17,7 +18,6 @@ db = client['telegram_bots']
 harcama_collection = db['harcama']
 
 KATEGORI, TUTAR, ACIKLAMA = range(3)
-SIL_ONAYI = "sil_onayi"
 
 KATEGORILER = {
     "kaptan": "👨‍✈️ Kaptan",
@@ -71,14 +71,11 @@ async def harcama_baslat(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def kategori_sec(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    
     if query.data == "kat_iptal":
         await query.edit_message_text("Iptal edildi.")
         return ConversationHandler.END
-    
     kategori_key = query.data.replace("kat_", "")
     context.user_data['kategori'] = kategori_key
-    
     await query.edit_message_text(f"Kategori: {KATEGORILER[kategori_key]}\n\nTutari yaz (TL):")
     return TUTAR
 
@@ -99,12 +96,10 @@ async def aciklama_al(update: Update, context: ContextTypes.DEFAULT_TYPE):
     aciklama = update.message.text.strip()
     if aciklama.lower() == 'yok':
         aciklama = "-"
-    
     kategori_key = context.user_data['kategori']
     tutar = context.user_data['tutar']
     simdi = datetime.now(TURKIYE)
     kullanici = update.effective_user.first_name or update.effective_user.username or "Bilinmeyen"
-    
     try:
         harcama = {
             "tarih": simdi.strftime("%Y-%m-%d"),
@@ -115,9 +110,7 @@ async def aciklama_al(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "ekleyen": kullanici,
             "timestamp": simdi
         }
-        
         harcama_collection.insert_one(harcama)
-        
         mesaj = "✅ Harcama Kaydedildi!\n\n"
         mesaj += f"📁 Kategori: {KATEGORILER[kategori_key]}\n"
         mesaj += f"💰 Tutar: {tutar:,.2f} TL\n"
@@ -125,11 +118,9 @@ async def aciklama_al(update: Update, context: ContextTypes.DEFAULT_TYPE):
         mesaj += f"📅 Tarih: {simdi.strftime('%d.%m.%Y %H:%M')}\n"
         mesaj += f"👤 Ekleyen: {kullanici}\n\n"
         mesaj += "✅ Veritabanina eklendi!"
-        
         await update.message.reply_text(mesaj)
     except Exception as e:
         await update.message.reply_text(f"❌ Hata: {e}")
-    
     context.user_data.clear()
     return ConversationHandler.END
 
@@ -142,14 +133,11 @@ async def liste(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         bugun = datetime.now(TURKIYE).strftime("%Y-%m-%d")
         harcamalar = list(harcama_collection.find({"tarih": bugun}))
-        
         if not harcamalar:
             await update.message.reply_text("Bugun harcama yok.")
             return
-        
         mesaj = f"📋 BUGUNUN HARCAMALARI\nTarih: {datetime.now(TURKIYE).strftime('%d.%m.%Y')}\n"
         mesaj += "=" * 30 + "\n\n"
-        
         toplam = 0
         for h in harcamalar:
             mesaj += f"{h['kategori']}\n"
@@ -157,7 +145,6 @@ async def liste(update: Update, context: ContextTypes.DEFAULT_TYPE):
             mesaj += f"📝 {h['aciklama']}\n"
             mesaj += f"👤 {h['ekleyen']} - {h['saat']}\n\n"
             toplam += h['tutar']
-        
         mesaj += f"💎 TOPLAM: {toplam:,.2f} TL"
         await update.message.reply_text(mesaj)
     except Exception as e:
@@ -166,29 +153,23 @@ async def liste(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def toplam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         harcamalar = list(harcama_collection.find())
-        
         if not harcamalar:
             await update.message.reply_text("Henuz harcama yok.")
             return
-        
         bugun = datetime.now(TURKIYE).strftime("%Y-%m-%d")
-        
         bugun_toplam = sum(h['tutar'] for h in harcamalar if h.get('tarih') == bugun)
         genel_toplam = sum(h['tutar'] for h in harcamalar)
-        
         kategoriler = {}
         for h in harcamalar:
             kat = h['kategori']
             kategoriler[kat] = kategoriler.get(kat, 0) + h['tutar']
-        
-        mesaj = "📊 HARCAMA ÖZETİ\n"
+        mesaj = "📊 HARCAMA OZETI\n"
         mesaj += "=" * 30 + "\n\n"
         mesaj += f"📅 Bugun: {bugun_toplam:,.2f} TL\n"
         mesaj += f"📅 Toplam: {genel_toplam:,.2f} TL\n\n"
         mesaj += "📁 Kategoriler:\n"
         for kat, tut in sorted(kategoriler.items(), key=lambda x: x[1], reverse=True):
             mesaj += f"{kat}: {tut:,.2f} TL\n"
-        
         await update.message.reply_text(mesaj)
     except Exception as e:
         await update.message.reply_text(f"❌ Hata: {e}")
@@ -196,20 +177,15 @@ async def toplam(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def excel_indir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         harcamalar = list(harcama_collection.find().sort("timestamp", -1))
-        
         if not harcamalar:
             await update.message.reply_text("Henuz harcama yok.")
             return
-        
         csv_data = "Tarih,Saat,Kategori,Tutar,Aciklama,Ekleyen\n"
-        
         for h in harcamalar:
             tarih_formatted = datetime.strptime(h['tarih'], "%Y-%m-%d").strftime("%d.%m.%Y")
             csv_data += f"{tarih_formatted},{h['saat']},{h['kategori']},{h['tutar']},{h['aciklama']},{h['ekleyen']}\n"
-        
         csv_file = io.BytesIO(csv_data.encode('utf-8-sig'))
         csv_file.name = f"harcamalar_{datetime.now(TURKIYE).strftime('%d%m%Y')}.csv"
-        
         await update.message.reply_document(
             document=csv_file,
             caption="📊 Harcama Raporu\n\nBu dosyayi Excel ile acabilirsin!"
@@ -217,60 +193,22 @@ async def excel_indir(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"❌ Hata: {e}")
 
-def main():
-    threading.Thread(target=web_sunucu, daemon=True).start()
-    
-    app = Application.builder().token(BOT_TOKEN).build()
-    
-    harcama_handler = ConversationHandler(
-        entry_points=[CommandHandler('harcama', harcama_baslat)],
-        states={
-            KATEGORI: [CallbackQueryHandler(kategori_sec)],
-            TUTAR: [MessageHandler(filters.TEXT & ~filters.COMMAND, tutar_al)],
-            ACIKLAMA: [MessageHandler(filters.TEXT & ~filters.COMMAND, aciklama_al)],
-        },
-        fallbacks=[CommandHandler('iptal', iptal)],
-        allow_reentry=True,
-    )
-    
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(harcama_handler)
-    app.add_handler(CommandHandler("liste", liste))
-    app.add_handler(CommandHandler("toplam", toplam))
-    app.add_handler(CommandHandler("excel", excel_indir))
-    app.add_handler(CommandHandler("sil", sil_harcama))
-app.add_handler(CallbackQueryHandler(sil_harcama_callback, pattern="^silsec_"))
-app.add_handler(CallbackQueryHandler(sil_harcama_callback, pattern="^silonay_"))
-app.add_handler(CallbackQueryHandler(sil_harcama_callback, pattern="^sil_iptal"))
-
-    print("Harcama Takip Botu calisiyor...")
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
-
 async def sil_harcama(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        bugun = datetime.now(TURKIYE).strftime("%Y-%m-%d")
         harcamalar = list(harcama_collection.find().sort("timestamp", -1).limit(20))
-
         if not harcamalar:
             await update.message.reply_text("Silinecek harcama bulunamadi.")
             return
-
         keyboard = []
         for h in harcamalar:
             tarih_fmt = datetime.strptime(h['tarih'], "%Y-%m-%d").strftime("%d.%m.%Y")
             buton_text = f"{tarih_fmt} | {h['kategori']} | {h['tutar']:.0f}TL | {h['aciklama'][:10]}"
             keyboard.append([InlineKeyboardButton(buton_text, callback_data=f"silsec_{str(h['_id'])}")])
-
         keyboard.append([InlineKeyboardButton("❌ İptal", callback_data="sil_iptal")])
-
         await update.message.reply_text(
             "🗑️ Silmek istedigin harcamayi sec:\n(Son 20 harcama listeleniyor)",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
-
     except Exception as e:
         await update.message.reply_text(f"❌ Hata: {e}")
 
@@ -283,63 +221,76 @@ async def sil_harcama_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         return
 
     if query.data.startswith("silsec_"):
-        from bson import ObjectId
         harcama_id = query.data.replace("silsec_", "")
-
         try:
             harcama = harcama_collection.find_one({"_id": ObjectId(harcama_id)})
-
             if not harcama:
                 await query.edit_message_text("❌ Harcama bulunamadi!")
                 return
-
             tarih_fmt = datetime.strptime(harcama['tarih'], "%Y-%m-%d").strftime("%d.%m.%Y")
-
-            detay = f"🗑️ Bu harcamayi silmek istediğinden emin misin?\n\n"
+            detay = "🗑️ Bu harcamayi silmek istediğinden emin misin?\n\n"
             detay += f"📅 Tarih: {tarih_fmt}\n"
             detay += f"📁 Kategori: {harcama['kategori']}\n"
             detay += f"💰 Tutar: {harcama['tutar']:.2f} TL\n"
             detay += f"📝 Aciklama: {harcama['aciklama']}\n"
             detay += f"👤 Ekleyen: {harcama['ekleyen']}\n"
             detay += f"🕐 Saat: {harcama['saat']}"
-
             keyboard = [
                 [
                     InlineKeyboardButton("✅ Evet, Sil", callback_data=f"silonay_{harcama_id}"),
-                    InlineKeyboardButton("❌ Hayır", callback_data="sil_iptal")
+                    InlineKeyboardButton("❌ Hayir", callback_data="sil_iptal")
                 ]
             ]
-
-            await query.edit_message_text(
-                detay,
-                reply_markup=InlineKeyboardMarkup(keyboard)
-            )
-
+            await query.edit_message_text(detay, reply_markup=InlineKeyboardMarkup(keyboard))
         except Exception as e:
             await query.edit_message_text(f"❌ Hata: {e}")
 
-    if query.data.startswith("silonay_"):
-        from bson import ObjectId
+    elif query.data.startswith("silonay_"):
         harcama_id = query.data.replace("silonay_", "")
-
         try:
             harcama = harcama_collection.find_one({"_id": ObjectId(harcama_id)})
-
             if not harcama:
                 await query.edit_message_text("❌ Harcama bulunamadi!")
                 return
-
             harcama_collection.delete_one({"_id": ObjectId(harcama_id)})
-
             tarih_fmt = datetime.strptime(harcama['tarih'], "%Y-%m-%d").strftime("%d.%m.%Y")
-
             mesaj = "✅ Harcama Silindi!\n\n"
             mesaj += f"📅 Tarih: {tarih_fmt}\n"
             mesaj += f"📁 Kategori: {harcama['kategori']}\n"
             mesaj += f"💰 Tutar: {harcama['tutar']:.2f} TL\n"
             mesaj += f"📝 Aciklama: {harcama['aciklama']}"
-
             await query.edit_message_text(mesaj)
-
         except Exception as e:
             await query.edit_message_text(f"❌ Hata: {e}")
+
+def main():
+    threading.Thread(target=web_sunucu, daemon=True).start()
+
+    app = Application.builder().token(BOT_TOKEN).build()
+
+    harcama_handler = ConversationHandler(
+        entry_points=[CommandHandler('harcama', harcama_baslat)],
+        states={
+            KATEGORI: [CallbackQueryHandler(kategori_sec, pattern="^kat_")],
+            TUTAR: [MessageHandler(filters.TEXT & ~filters.COMMAND, tutar_al)],
+            ACIKLAMA: [MessageHandler(filters.TEXT & ~filters.COMMAND, aciklama_al)],
+        },
+        fallbacks=[CommandHandler('iptal', iptal)],
+        allow_reentry=True,
+    )
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(harcama_handler)
+    app.add_handler(CommandHandler("liste", liste))
+    app.add_handler(CommandHandler("toplam", toplam))
+    app.add_handler(CommandHandler("excel", excel_indir))
+    app.add_handler(CommandHandler("sil", sil_harcama))
+    app.add_handler(CallbackQueryHandler(sil_harcama_callback, pattern="^silsec_"))
+    app.add_handler(CallbackQueryHandler(sil_harcama_callback, pattern="^silonay_"))
+    app.add_handler(CallbackQueryHandler(sil_harcama_callback, pattern="^sil_iptal"))
+
+    print("Harcama Takip Botu calisiyor...")
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
