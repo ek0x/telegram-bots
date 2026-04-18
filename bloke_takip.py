@@ -6,6 +6,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pymongo import MongoClient
+import io
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 VERI_DOSYASI = "bloke_verileri.json"
@@ -55,13 +56,14 @@ def veri_kaydet(veri):
         print(f"MongoDB kayit hatasi: {e}")
         
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    mesaj = "💰 *Banka Bloke Takip Botu*\n\n"
-    mesaj += "📋 Komutlar:\n"
+    mesaj = "💰 Banka Bloke Takip Botu\n\n"
+    mesaj += "Komutlar:\n"
     mesaj += "/ekle - Yeni bloke ekle\n"
-    mesaj += "/liste - Tüm blokeleri göster\n"
+    mesaj += "/liste - Bloke listesi\n"
     mesaj += "/sil - Bloke sil\n"
-    mesaj += "/toplam - Toplam tutarı göster\n"
-    mesaj += "/iptal - Devam eden işlemi iptal et"
+    mesaj += "/toplam - Toplam tutar\n"
+    mesaj += "/excel - Excel dosyasi indir\n"
+    mesaj += "/yardim - Yardim\n"
     await update.message.reply_text(mesaj, parse_mode='Markdown')
 
 async def ekle_baslat(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -220,6 +222,24 @@ async def sil_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await query.edit_message_text("❌ Kayıt bulunamadı!")
 
+async def excel_indir(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        veri = veri_yukle()
+        if not veri:
+            await update.message.reply_text("Henuz kayitli bloke bulunmuyor.")
+            return
+        csv_data = "Sahip,Banka,Tutar\n"
+        for kayit in veri:
+            csv_data += f"{kayit['sahip']},{kayit['banka']},{kayit['tutar']}\n"
+        csv_file = io.BytesIO(csv_data.encode('utf-8-sig'))
+        csv_file.name = f"blokeler_{datetime.now().strftime('%d%m%Y')}.csv"
+        await update.message.reply_document(
+            document=csv_file,
+            caption="📊 Bloke Listesi\n\nBu dosyayi Excel ile acabilirsin!"
+        )
+    except Exception as e:
+        await update.message.reply_text(f"❌ Hata: {e}")
+
 async def yardim(update: Update, context: ContextTypes.DEFAULT_TYPE):
     mesaj = "📖 *YARDIM - KOMUTLAR*\n"
     mesaj += "━━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -249,6 +269,7 @@ def main():
     app.add_handler(CommandHandler("toplam", toplam_cmd))
     app.add_handler(CommandHandler("sil", sil))
     app.add_handler(CommandHandler("yardim", yardim))
+    app.add_handler(CommandHandler("excel", excel_indir))
     app.add_handler(CallbackQueryHandler(sil_callback, pattern="^sil_"))
     print("💰 Bloke Takip Botu çalışıyor...")
     app.run_polling()
